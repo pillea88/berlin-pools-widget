@@ -1,0 +1,33 @@
+import json
+import re
+import urllib.request
+from bs4 import BeautifulSoup
+
+POOLS = {
+    "Kombibad Gropiusstadt Hallenbad": "https://www.berlinerbaeder.de/baeder/detail/kombibad-gropiusstadt-hallenbad/",
+    "SSE": "https://www.berlinerbaeder.de/baeder/detail/schwimm-und-sprunghalle-im-europasportpark-sse/"
+}
+
+results = {}
+
+for name, url in POOLS.items():
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        html = urllib.request.urlopen(req, timeout=15).read().decode('utf-8')
+        soup = BeautifulSoup(html, 'html.parser')
+        text = soup.get_text(" ", strip=True)
+
+        # Extract water temperature (e.g., "26,0°C")
+        temp_match = re.search(r'Wassertemperatur.*?(\d{2}[,\.]\d\s*°C)', text)
+        temp = temp_match.group(1) if temp_match else "N/A"
+
+        # Extract today's public swimming hours if listed
+        hours_match = re.search(r'(\d{2}:\d{2}\s*-\s*\d{2}:\d{2})\s*öffentl\. Schwimmen', text)
+        hours = hours_match.group(1) if hours_match else "Check schedule"
+
+        results[name] = {"temp": temp, "hours": hours}
+    except Exception:
+        results[name] = {"temp": "Error", "hours": "Error"}
+
+with open("data.json", "w", encoding="utf-8") as f:
+    json.dump(results, f, ensure_ascii=False, indent=2)
