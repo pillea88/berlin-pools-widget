@@ -1,0 +1,24 @@
+name: Update Pool Data
+on:
+  schedule:
+    - cron: '15 * * * *' # Runs at minute 15 of every hour
+  workflow_dispatch:      # Lets you run it manually to test
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install beautifulsoup4
+      - run: python fetch_pools.py
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update data" && git push)
